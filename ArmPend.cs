@@ -31,6 +31,16 @@ namespace Sim
 
         double[,] DCMS;  // DCM between shoulder frame and Newtonian frame
         double[,] DCME;  // DCM between elbow frame and Newtonian frame
+        
+        // partial velocities: first index -> generalized speed
+        //                     second idx  -> body index
+        //                     third index -> component in N frame 
+        double[][][] pVel;
+        double[][][] pAngVel;
+
+        // dummy vectors
+        double[] dVec;
+        double[] dVecB;
 
         //--------------------------------------------------------------------
         // constructor
@@ -87,6 +97,29 @@ namespace Sim
             DCMS = new double[3,3];
             DCME = new double[3,3];
 
+            pVel = new double[4][][];
+            pAngVel = new double[4][][];
+            for(int i=0;i<4;++i){
+                pVel[i] = new double[2][];
+                pAngVel[i] = new double[2][];
+                for(int j=0;j<2;++j){
+                    pVel[i][j] = new double[3];
+                    pAngVel[i][j] = new double[3];
+                }
+            }
+
+            // angular velocity on upper arm due to elbow is zero
+            pAngVel[3][0][0] = pAngVel[3][0][1] = pAngVel[3][0][2] = 0.0;
+            
+            // partial velocity of cm of upper arm due to omegaX is ZERO
+            pVel[0][0][0] = pVel[0][0][1] = pVel[0][0][2] = 0.0;
+
+            // partial vel of cm of upper arm due to elbow is ZERO
+            pVel[3][0][0] = pVel[3][0][1] = pVel[3][0][2] = 0.0;
+
+            dVec = new double[3];
+            dVecB = new double[3];
+
             SetRHSFunc(RHSFunc);
 
         }
@@ -122,7 +155,7 @@ namespace Sim
             double q2Sq = q2*q2;
             double q3Sq = q3*q3;
 
-            // generate DCMS
+            // generate DCMS (Shoulder)
             DCMS[0,0] = q0Sq + q1Sq - q2Sq - q3Sq;
             DCMS[0,1] = 2.0*(q1*q2 - q0*q3);
             DCMS[0,2] = 2.0*(q0*q2 + q1*q3);
@@ -135,7 +168,7 @@ namespace Sim
             DCMS[2,1] = 2.0*(q0*q1 + q2*q3);
             DCMS[2,2] = q0Sq - q1Sq - q2Sq + q3Sq;
 
-            // generate DCME
+            // generate DCME (Elbow)
             DCME[0,0] = DCMS[0,0]*cTh - DCMS[0,2]*sTh;
             DCME[0,1] = DCMS[0,1];
             DCME[0,2] = DCMS[0,0]*sTh + DCMS[0,2]*cTh;
@@ -148,6 +181,70 @@ namespace Sim
             DCME[2,1] = DCMS[2,1];
             DCME[2,2] = DCMS[2,0]*sTh + DCMS[2,2]*cTh;
 
+            // calculate partial angular velocities, N frame
+            pAngVel[0][0][0] = pAngVel[0][1][0] = DCMS[0,0];  // omX
+            pAngVel[0][0][1] = pAngVel[0][1][1] = DCMS[1,0];
+            pAngVel[0][0][2] = pAngVel[0][1][2] = DCMS[2,0];
+
+            pAngVel[1][0][0] = pAngVel[1][1][0] = DCMS[0,1];  // omY
+            pAngVel[1][0][1] = pAngVel[1][1][1] = DCMS[1,1];
+            pAngVel[1][0][2] = pAngVel[1][1][2] = DCMS[2,1];
+
+            pAngVel[2][0][0] = pAngVel[2][1][0] = DCMS[0,2];  // omZ
+            pAngVel[2][0][1] = pAngVel[2][1][1] = DCMS[1,2];
+            pAngVel[2][0][2] = pAngVel[2][1][2] = DCMS[2,2];
+
+            pAngVel[3][1][0] = DCMS[0,1];  // uTheta
+            pAngVel[3][1][1] = DCMS[1,1];
+            pAngVel[3][1][2] = DCMS[2,1];
+
+            // calculate partial velocities, N frame
+            dVec[0] = dVec[1] = 0.0; dVec[2] = -dAU;
+            ExpressInN(DCMS,dVec,pVel[1][0]);
+
+            dVec[0] = dVec[2] = 0.0; dVec[1] = dAU;
+            ExpressInN(DCMS,dVec,pVel[2][0]);
+        }
+
+        //--------------------------------------------------------------------
+        // ExpressInN: 
+        //--------------------------------------------------------------------
+        private void ExpressInN(double[,] dcm, double[] locVec, double[] nVec)
+        {
+            nVec[0] = dcm[0,0]*locVec[0] + dcm[0,1]*locVec[1] + 
+                dcm[0,2]*locVec[2];
+            nVec[1] = dcm[1,0]*locVec[0] + dcm[1,1]*locVec[1] + 
+                dcm[1,2]*locVec[2];
+            nVec[2] = dcm[2,0]*locVec[0] + dcm[2,1]*locVec[1] + 
+                dcm[2,2]*locVec[2];
+        }
+
+        //--------------------------------------------------------------------
+        // ExpressInN_Add: 
+        //--------------------------------------------------------------------
+        private void ExpressInN_Add(double[,] dcm, double[] locVec, 
+            double[] nVec)
+        {
+            nVec[0] += dcm[0,0]*locVec[0] + dcm[0,1]*locVec[1] + 
+                dcm[0,2]*locVec[2];
+            nVec[1] += dcm[1,0]*locVec[0] + dcm[1,1]*locVec[1] + 
+                dcm[1,2]*locVec[2];
+            nVec[2] += dcm[2,0]*locVec[0] + dcm[2,1]*locVec[1] + 
+                dcm[2,2]*locVec[2];
+        }
+
+        //--------------------------------------------------------------------
+        // TestFunc
+        //--------------------------------------------------------------------
+        public void TestFunc()
+        {
+            dVecB[0] = 1.0;
+            dVecB[1] = 2.0;
+            dVecB[2] = 3.0;
+
+            ExpressInN(DCMS,dVecB,dVec);
+            Console.WriteLine(dVec[0].ToString() + ", " + dVec[1].ToString() + 
+                ", " + dVec[2].ToString());
         }
     }
 } 
