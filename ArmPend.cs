@@ -199,11 +199,26 @@ namespace Sim
             pAngVel[3][1][2] = DCMS[2,1];
 
             // calculate partial velocities, N frame
-            dVec[0] = dVec[1] = 0.0; dVec[2] = -dAU;
+            // uppper arm (omX) is zero, handled previously
+            dVec[0] = dVec[1] = 0.0; dVec[2] = -dAU;  //upper arm (omY)
             ExpressInN(DCMS,dVec,pVel[1][0]);
-
-            dVec[0] = dVec[2] = 0.0; dVec[1] = dAU;
+            dVec[0] = dVec[2] = 0.0; dVec[1] = dAU;   //upper arm (omZ)
             ExpressInN(DCMS,dVec,pVel[2][0]);
+            // upper arm (uTh) is zero, handled previously
+            dVecB[0] = 0.0; dVecB[1] = dAL*sTh; dVecB[2] = 0.0; // AL (omX)
+            ExpressInN(DCME,dVecB,pVel[0][1]);
+            dVec[0]=0.0; dVec[1]=0.0; dVec[2]=-LAU;  // lower arm (omY)
+            dVecB[0]=0.0; dVecB[1]=0.0; dVecB[2]=-dAL;
+            ExpressInN(DCMS,dVec,pVel[1][1]);
+            ExpressInN_Add(DCME,dVecB,pVel[1][1]);
+            dVec[0]=0.0; dVec[1]=LAU; dVec[2]=0.0;   // lower arm (omZ)
+            dVecB[0]=0.0; dVecB[1]=dAL*cTh; dVecB[2]=0.0;
+            ExpressInN(DCMS,dVec,pVel[2][1]);
+            ExpressInN_Add(DCME,dVecB,pVel[2][1]);
+            dVecB[0]=0.0; dVecB[1]=0.0; dVecB[2]=-dAL; // lower arm (uTh)
+            ExpressInN(DCME,dVecB,pVel[3][1]);
+
+            
         }
 
         //--------------------------------------------------------------------
