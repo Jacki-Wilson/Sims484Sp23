@@ -28,6 +28,10 @@ namespace Sim
         double IgALx;    // moi of lower arm about CG, x component
         double IgALy;    //                            y component
         double IgALz;    //                            z component
+
+        double[,] DCMS;  // DCM between shoulder frame and Newtonian frame
+        double[,] DCME;  // DCM between elbow frame and Newtonian frame
+
         //--------------------------------------------------------------------
         // constructor
         //--------------------------------------------------------------------
@@ -55,7 +59,8 @@ namespace Sim
             LAL = (xiAF + xiH) *heightHuman;
             
             dAU = etaAU * LAU;
-            dAL = (etaAF*xiAF*rhoAF +(xiAF + etaH*xiH)*rhoH)*heightHuman/(rhoAF+rhoH);
+            dAL = (etaAF*xiAF*rhoAF +(xiAF + etaH*xiH)*rhoH)*
+                heightHuman/(rhoAF+rhoH);
 
             double rAU = rFracAU*LAU;
             double rAL = rFracAL*LAL;
@@ -66,9 +71,83 @@ namespace Sim
             IgALx = 0.5*mAL*rAL*rAL;
             IgALy = IgALz = 0.25*mAL*rAL*rAL + mAL*LAL*LAL/12.0;
 
-            //Console.WriteLine("Masses: " + mAU.ToString() + ", " + mAL.ToString());
-            //Console.WriteLine("Lengths: " + LAU.ToString() + ", " + LAL.ToString());
-            //Console.WriteLine("dCG: " + dAU.ToString() + ", " + dAL.ToString());
+            // set up default initial conditions
+            x[0] = 0.0;    // omega_x, angular velocity of upper arm
+            x[1] = 0.0;    // omega_y
+            x[2] = 0.0;    // omega_z
+            x[3] = 0.0;    // u_theta, time deriv of elbow angle
+
+            x[4] = 1.0;    // q0, quaternion coords
+            x[5] = 0.0;    // q1
+            x[6] = 0.0;    // q2
+            x[7] = 0.0;    // q3
+
+            x[8] = 0.0;    // theta, elbow angle
+
+            DCMS = new double[3,3];
+            DCME = new double[3,3];
+
+            SetRHSFunc(RHSFunc);
+
+        }
+
+        //--------------------------------------------------------------------
+        // MapDCMtoQ: Take a direction cosine matrix and generate the 
+        //      corresponding quaternion state
+        //--------------------------------------------------------------------
+        private void MapDCMtoQ(double[,] B)
+        {
+
+        }
+
+        //--------------------------------------------------------------------
+        // RHSFunc: function which calculates the right side of the 
+        //          differential equation
+        //--------------------------------------------------------------------
+        private void RHSFunc(double[] st, double t, double[] ff)
+        {
+            double omX = st[0];
+            double omY = st[1];
+            double omZ = st[2];
+            double uTh = st[3];
+            double q0  = st[4];
+            double q1  = st[5];
+            double q2  = st[6];
+            double q3  = st[7];
+            double cTh = Math.Cos(st[8]);
+            double sTh = Math.Sin(st[8]);
+
+            double q0Sq = q0*q0;
+            double q1Sq = q1*q1;
+            double q2Sq = q2*q2;
+            double q3Sq = q3*q3;
+
+            // generate DCMS
+            DCMS[0,0] = q0Sq + q1Sq - q2Sq - q3Sq;
+            DCMS[0,1] = 2.0*(q1*q2 - q0*q3);
+            DCMS[0,2] = 2.0*(q0*q2 + q1*q3);
+
+            DCMS[1,0] = 2.0*(q0*q3 + q1*q2);
+            DCMS[1,1] = q0Sq - q1Sq + q2Sq - q3Sq;
+            DCMS[1,2] = 2.0*(q2*q3 - q0*q1);
+
+            DCMS[2,0] = 2.0*(q1*q3 - q0*q2);
+            DCMS[2,1] = 2.0*(q0*q1 + q2*q3);
+            DCMS[2,2] = q0Sq - q1Sq - q2Sq + q3Sq;
+
+            // generate DCME
+            DCME[0,0] = DCMS[0,0]*cTh - DCMS[0,2]*sTh;
+            DCME[0,1] = DCMS[0,1];
+            DCME[0,2] = DCMS[0,0]*sTh + DCMS[0,2]*cTh;
+
+            DCME[1,0] = DCMS[1,0]*cTh - DCMS[1,2]*sTh;
+            DCME[1,1] = DCMS[1,1];
+            DCME[1,2] = DCMS[1,0]*sTh + DCMS[1,2]*cTh;
+
+            DCME[2,0] = DCMS[2,0]*cTh - DCMS[2,2]*sTh;
+            DCME[2,1] = DCMS[2,1];
+            DCME[2,2] = DCMS[2,0]*sTh + DCMS[2,2]*cTh;
+
         }
     }
 } 
