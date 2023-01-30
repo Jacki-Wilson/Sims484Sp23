@@ -7,7 +7,7 @@ using System;
 
 namespace Sim
 {    
-    public class SpinBook : Integrator
+    public class SpinBook : Simulator
     {
         private double I1 = 1.0;   // Principal moments of inertia
         private double I2 = 2.0;
@@ -28,14 +28,14 @@ namespace Sim
             x[5] = 1.05;   // u2   body angular velocity
             x[6] = 0.0;    // u3   body angular velocity
 
-            integratorInit(rhsFunc);
+            SetRHSFunc(RHSFunc);
         }
 
         //--------------------------------------------------------------------
         // rhsFunc: function which calculates the right side of the
         //          differential equation.
         //--------------------------------------------------------------------
-        public void rhsFunc(double[] st, double[] ff)
+        public void RHSFunc(double[] st, double t, double[] ff)
         {
             double Q0 = st[0];
             double Q1 = st[1];
