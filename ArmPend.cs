@@ -45,11 +45,24 @@ namespace Sim
         //       third index -> component in N frame
         double[][][] inertiaBdyDeriv;
 
-        // body inertial terms: Those NOT involving generalized speeds. These
-        //       are full terms, not coefficients. DO NOT SWITCH SIGN.
+        // body inertial terms: Those NOT involving derivs of gen. speeds.
+        //       These are full terms, not coefficients. DO NOT SWITCH SIGN.
         //       first index -> body index
         //       second idx  -> component in N frame
         double[][] inertiaBdyOther;
+
+        // CG inertia terms (mass x accel): Coeffs of terms involving derivs
+        //       of generalized speeds. DO NOT SWITCH SIGN.
+        //       first index -> generalized speed for which deriv is taken
+        //       second idx  -> body index
+        //       third index -> commponent in N frame
+        double[][][] inertiaCGDeriv;
+
+        // CG inertia terms (mass x accel): Those parts NOT involving derivs
+        //       of generalized speeds. DO NOT SWITCH SIGN.
+        //       first index -> body index
+        //       second idx  -> component in N frame
+        double[][] inertiaCGOther;
 
         // dummy vectors
         double[] dVec;
@@ -116,20 +129,25 @@ namespace Sim
             pVel = new double[4][][];
             pAngVel = new double[4][][];
             inertiaBdyDeriv = new double[4][][];
+            inertiaCGDeriv = new double[4][][];
             for(i=0;i<4;++i){
                 pVel[i] = new double[2][];
                 pAngVel[i] = new double[2][];
                 inertiaBdyDeriv[i] = new double[2][];
+                inertiaCGDeriv[i] = new double[2][];
                 for(j=0;j<2;++j){
                     pVel[i][j] = new double[3];
                     pAngVel[i][j] = new double[3];
                     inertiaBdyDeriv[i][j] = new double[3];
+                    inertiaCGDeriv[i][j] = new double[3];
                 }
             }
 
             inertiaBdyOther = new double[2][];
+            inertiaCGOther = new double[2][];
             for(j=0;j<2;++j){
                 inertiaBdyOther[j] = new double[3];
+                inertiaCGOther[j] = new double[3];
             }
 
 
@@ -144,7 +162,15 @@ namespace Sim
 
             // inertia upper arm body coefficient due to uTh is zero
             inertiaBdyDeriv[3][0][0] = inertiaBdyDeriv[3][0][1] = 
-                inertiaBdyDeriv[3][0][2] = 0.0; 
+                inertiaBdyDeriv[3][0][2] = 0.0;
+
+            // inertia upper arm CG coefficient due to omegaX is zero
+            inertiaCGDeriv[0][0][0] = inertiaCGDeriv[0][0][1] = 
+                inertiaCGDeriv[0][0][2] = 0.0;
+
+            // inertia upper arm CG coefficient due to uTh is zero
+            inertiaCGDeriv[3][0][0] = inertiaCGDeriv[3][0][1] = 
+                inertiaCGDeriv[3][0][2] = 0.0;
 
             dVec = new double[3];
             dVecB = new double[3];
@@ -277,6 +303,28 @@ namespace Sim
             dVec[1] = -(IgALz-IgALx)*dVecB[2]*dVecB[0];
             dVec[2] = IgALz*dVecB[0]*uTh - (IgALx-IgALy)*dVecB[0]*dVecB[1];
             ExpressInN(DCME,dVec,inertiaBdyOther[1]);
+
+            // inertia CG coefficients, N frame
+            // upper Arm (omX) is zero, handled previously
+            dVec[0]=0.0; dVec[1]=0.0; dVec[2]= -mAU*dAU;  // upper arm (omY)
+            ExpressInN(DCMS,dVec,inertiaCGDeriv[1][0]);
+            dVec[0]=0.0; dVec[1]=mAU*dAU; dVec[2]=0.0;    // upper arm (omZ)
+            ExpressInN(DCMS,dVec,inertiaCGDeriv[2][0]);
+            // upper Arm (uTh) is zero, handled previously
+            dVecB[0]=0.0; dVecB[1]=mAL*dAL*sTh; dVecB[2]=0.0;  // AL (omX)
+            ExpressInN(DCME,dVecB,inertiaCGDeriv[0][1]);
+            dVec[0]=0.0; dVec[1]=0.0; dVec[2]= -mAL*LAU;  // lower arm (omY)
+            dVecB[0]=0.0; dVecB[1]=0.0; dVecB[2]= -mAL*dAL;
+            ExpressInN(DCMS,dVec,inertiaCGDeriv[1][1]);
+            ExpressInN_Add(DCME,dVecB,inertiaCGDeriv[1][1]);
+            dVec[0]=0.0; dVec[1]=mAL*LAU; dVec[2]=0.0;   // lower arm (omZ)
+            dVecB[0]=0.0; dVecB[1]=mAL*dAL*cTh; dVecB[2]=0.0;
+            ExpressInN(DCMS,dVec,inertiaCGDeriv[2][1]);
+            ExpressInN_Add(DCME,dVecB,inertiaCGDeriv[2][1]);
+            dVecB[0]=0.0; dVecB[1]=0.0; dVecB[2]= -mAL*dAL; // lower arm (uTh)
+            ExpressInN(DCME,dVecB,inertiaCGDeriv[3][1]);
+
+            
         }
 
         //--------------------------------------------------------------------
