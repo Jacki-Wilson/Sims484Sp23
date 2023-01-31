@@ -38,6 +38,19 @@ namespace Sim
         double[][][] pVel;
         double[][][] pAngVel;
 
+        // body inertial terms: Coeffs of terms involving derivs of
+        //       generalized speeds. DO NOT SWITCH SIGN.
+        //       first index -> generalized speed for which deriv is taken
+        //       second idx  -> body index
+        //       third index -> component in N frame
+        double[][][] inertiaBdyDeriv;
+
+        // body inertial terms: Those NOT involving generalized speeds. These
+        //       are full terms, not coefficients. DO NOT SWITCH SIGN.
+        //       first index -> body index
+        //       second idx  -> component in N frame
+        double[][] inertiaBdyOther;
+
         // dummy vectors
         double[] dVec;
         double[] dVecB;
@@ -97,16 +110,28 @@ namespace Sim
             DCMS = new double[3,3];
             DCME = new double[3,3];
 
+            // allocate arrays to hold patial velocities, inertia terms
+            //     and generalized forces
+            int i,j;
             pVel = new double[4][][];
             pAngVel = new double[4][][];
-            for(int i=0;i<4;++i){
+            inertiaBdyDeriv = new double[4][][];
+            for(i=0;i<4;++i){
                 pVel[i] = new double[2][];
                 pAngVel[i] = new double[2][];
-                for(int j=0;j<2;++j){
+                inertiaBdyDeriv[i] = new double[2][];
+                for(j=0;j<2;++j){
                     pVel[i][j] = new double[3];
                     pAngVel[i][j] = new double[3];
+                    inertiaBdyDeriv[i][j] = new double[3];
                 }
             }
+
+            inertiaBdyOther = new double[2][];
+            for(j=0;j<2;++j){
+                inertiaBdyOther[j] = new double[3];
+            }
+
 
             // angular velocity on upper arm due to elbow is zero
             pAngVel[3][0][0] = pAngVel[3][0][1] = pAngVel[3][0][2] = 0.0;
@@ -116,6 +141,10 @@ namespace Sim
 
             // partial vel of cm of upper arm due to elbow is ZERO
             pVel[3][0][0] = pVel[3][0][1] = pVel[3][0][2] = 0.0;
+
+            // inertia upper arm body coefficient due to uTh is zero
+            inertiaBdyDeriv[3][0][0] = inertiaBdyDeriv[3][0][1] = 
+                inertiaBdyDeriv[3][0][2] = 0.0; 
 
             dVec = new double[3];
             dVecB = new double[3];
@@ -217,6 +246,23 @@ namespace Sim
             ExpressInN_Add(DCME,dVecB,pVel[2][1]);
             dVecB[0]=0.0; dVecB[1]=0.0; dVecB[2]=-dAL; // lower arm (uTh)
             ExpressInN(DCME,dVecB,pVel[3][1]);
+
+            // inertial body coefficients, N frame
+            dVec[0]=IgAUx; dVec[1]=0.0; dVec[2]=0.0;   // upper arm (omX)
+            ExpressInN(DCMS,dVec,inertiaBdyDeriv[0][0]);
+            dVec[0]=0.0; dVec[1]=IgAUy; dVec[2]=0.0;   // upper arm (omY)
+            ExpressInN(DCMS,dVec,inertiaBdyDeriv[1][0]);
+            dVec[0]=0.0; dVec[1]=0.0; dVec[2]=IgAUz;   // upper arm (omZ)
+            ExpressInN(DCMS,dVec,inertiaBdyDeriv[2][0]);
+            // upper arm (uTh) is zero, handled previously
+            dVec[0]=IgALx*cTh; dVec[1]=0.0; dVec[2]=IgALz*sTh; // AL (omX)
+            ExpressInN(DCME,dVec,inertiaBdyDeriv[0][1]);
+            dVec[0]=0.0; dVec[1]=IgALy; dVec[2]=0.0;  // lower arm (omY)
+            ExpressInN(DCME,dVec,inertiaBdyDeriv[1][1]);
+            dVec[0]=-IgALx*sTh; dVec[1]=0.0; dVec[2]=IgALz*cTh; // AL (omZ)
+            ExpressInN(DCME,dVec,inertiaBdyDeriv[2][1]);
+            dVec[0]=0.0; dVec[1]=IgALy; dVec[3]=0.0;  // lower arm (uTh)
+            ExpressInN(DCME,dVec,inertiaBdyDeriv[3][1]);
 
             
         }
