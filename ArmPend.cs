@@ -8,11 +8,13 @@
 // Data come from the following website: https://exrx.net/Kinesiology/Segments
 //============================================================================
 using System;
+using Util484;
 
 namespace Sim
 {
     public class ArmPend : Simulator
     {
+        LinAlgEq linSys; // system of linear algebraic equations
         double heightHuman = 1.731;    // human height (meters)
         double massHuman =  73.0;      // human mass (kg)
 
@@ -63,6 +65,15 @@ namespace Sim
         //       first index -> body index
         //       second idx  -> component in N frame
         double[][] inertiaCGOther;
+
+        // Weight acting at body CG, moment on body
+        //       first index -> body index
+        //       second idx  -> component in N frame
+        double[][] weight;
+        double[][] moment;
+        
+        double tauE;  //torque at elbow
+        double g;     // gravitational field strength
 
         // dummy vectors
         double[] dVec;
@@ -128,6 +139,8 @@ namespace Sim
             DCMS = new double[3,3];
             DCME = new double[3,3];
 
+            linSys = new LinAlgEq(4);
+
             // allocate arrays to hold patial velocities, inertia terms
             //     and generalized forces
             int i,j;
@@ -150,9 +163,13 @@ namespace Sim
 
             inertiaBdyOther = new double[2][];
             inertiaCGOther = new double[2][];
+            weight = new double[2][];
+            moment = new double[2][];
             for(j=0;j<2;++j){
                 inertiaBdyOther[j] = new double[3];
                 inertiaCGOther[j] = new double[3];
+                weight[j] = new double[3];
+                moment[j] = new double[3];
             }
 
 
@@ -177,8 +194,15 @@ namespace Sim
             inertiaCGDeriv[3][0][0] = inertiaCGDeriv[3][0][1] = 
                 inertiaCGDeriv[3][0][2] = 0.0;
 
+            // weight
+            g = 9.81;
+            weight[0][0]=0.0; weight[0][1]=mAU*g; weight[0][2]=0.0; //AU
+            weight[1][0]=0.0; weight[1][1]=mAL*g; weight[1][2]=0.0; //AL
+
             dVec = new double[3];
             dVecB = new double[3];
+
+            tauE = 0.0;
 
             SetRHSFunc(RHSFunc);
 
@@ -346,7 +370,11 @@ namespace Sim
             ExpressInN(DCMS,dVec,inertiaCGOther[1]);
             ExpressInN_Add(DCME,dVecB,inertiaCGOther[1]);
 
-            
+            // moment
+            dVec[0]=0.0; dVec[1]=tauE; dVec[2]=0.0;   //AU
+            ExpressInN(DCMS,dVec,moment[0]);
+            dVec[1]= -tauE;                           //AL
+            ExpressInN(DCMS,dVec,moment[1]);   
         }
 
         //--------------------------------------------------------------------
