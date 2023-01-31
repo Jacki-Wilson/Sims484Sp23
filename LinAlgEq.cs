@@ -23,14 +23,14 @@ namespace Util484
             M  = new double[1][];
             _x = new double[1];
 
-            resize(nn);
+            Resize(nn);
         }
 
         //--------------------------------------------------------------------
         // resize: resize the matrices to hold the right number of equations
         //         and unknowns.
         //--------------------------------------------------------------------
-        public void resize(int nn)
+        public void Resize(int nn)
         {
             // ##### should check if nn is bigger than zero
             n = nn;
@@ -57,9 +57,9 @@ namespace Util484
         }
 
         //--------------------------------------------------------------------
-        // solveGauss: Solve by Gauss Eliminition
+        // SolveGauss: Solve by Gauss Eliminition
         //--------------------------------------------------------------------
-        public void solveGauss()
+        public void SolveGauss()
         {
             // form augmented matrix
             int i, j, k;
@@ -76,7 +76,7 @@ namespace Util484
             double fac;
             for(i=0;i<(n-1);++i)
             {
-                pivotRow(i);
+                PivotRow(i);
                 for(j=i+1;j<n;++j)
                 {
                     fac = M[j][i] / M[i][i];
@@ -102,9 +102,9 @@ namespace Util484
         }
 
         //--------------------------------------------------------------------
-        // pivotRow
+        // PivotRow
         //--------------------------------------------------------------------
-        public void pivotRow(int j)
+        public void PivotRow(int j)
         {
             double[] holder;
             double maxElem = Math.Abs(M[j][j]);
@@ -133,9 +133,49 @@ namespace Util484
         }
 
         //--------------------------------------------------------------------
-        // check: checks the solution
+        // SetAZero: Sets all elements of A to zero
         //--------------------------------------------------------------------
-        public double check()
+        public void SetAZero()
+        {
+            int i;
+            int j;
+            for(i=0;i<n;++i){
+                for(j=0;j<n;++j){
+                    _A[i][j] = 0.0;
+                }
+            }
+        }
+
+        //--------------------------------------------------------------------
+        // SetABZero: Sets all elements of A and B to zero
+        //--------------------------------------------------------------------
+        public void SetABZero()
+        {
+            int i;
+            int j;
+            for(i=0;i<n;++i){
+                for(j=0;j<n;++j){
+                    _A[i][j] = 0.0;
+                }
+                _b[i] = 0.0;
+            }
+        }
+
+        //--------------------------------------------------------------------
+        // SetBZero: Sets all elements of B to zero
+        //--------------------------------------------------------------------
+        public void SetBZero()
+        {
+            int i;
+            for(i=0;i<n;++i){
+                _b[i] = 0.0;
+            }
+        }
+
+        //--------------------------------------------------------------------
+        // Check: checks the solution
+        //--------------------------------------------------------------------
+        public double Check()
         {
             double sum = 0.0;
             double sum2 = 0.0;
