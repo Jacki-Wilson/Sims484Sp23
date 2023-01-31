@@ -275,7 +275,7 @@ namespace Sim
             dVecB[2] = omX*sTh + omZ*cTh; // ang vel of AL about e_z
             dVec[0] = -IgALx*dVecB[2]*uTh - (IgALy-IgALz)*dVecB[1]*dVecB[2];
             dVec[1] = -(IgALz-IgALx)*dVecB[2]*dVecB[0];
-            dVec[2] = -IgALz*dVecB[0]*uTh - (IgALx-IgALy)*dVecB[0]*dVecB[1];
+            dVec[2] = IgALz*dVecB[0]*uTh - (IgALx-IgALy)*dVecB[0]*dVecB[1];
             ExpressInN(DCME,dVec,inertiaBdyOther[1]);
         }
 
