@@ -68,6 +68,11 @@ namespace Sim
         double[] dVec;
         double[] dVecB;
 
+        // dummy variables
+        double dumA;
+        double dumB;
+        double dumC;
+
         //--------------------------------------------------------------------
         // constructor
         //--------------------------------------------------------------------
@@ -323,6 +328,23 @@ namespace Sim
             ExpressInN_Add(DCME,dVecB,inertiaCGDeriv[2][1]);
             dVecB[0]=0.0; dVecB[1]=0.0; dVecB[2]= -mAL*dAL; // lower arm (uTh)
             ExpressInN(DCME,dVecB,inertiaCGDeriv[3][1]);
+
+            // inertia CG other terms, N frame
+            dVec[0] = -mAU*dAU*(omY*omY + omZ*omZ);    // upper arm
+            dVec[1] = mAU*dAU*omX*omY;
+            dVec[2] = mAU*dAU*omX*omZ;
+            ExpressInN(DCMS,dVec,inertiaCGOther[0]);
+            dVec[0] = -mAL*LAU*(omY*omY + omZ*omZ);    // lower arm
+            dVec[1] =  mAL*LAU*omX*omY;
+            dVec[2] =  mAL*LAU*omX*omZ;
+            dumA = omX*sTh + omZ*cTh;
+            dumB = omY+uTh;
+            dumC = omX*cTh - omZ*sTh;
+            dVecB[0] = -mAL*dAL*(dumA*dumA + dumB*dumB);
+            dVecB[1] = mAL*dAL*(dumC*(dumA+uTh));
+            dVecB[2] = mAL*dAL*dumA*dumC;
+            ExpressInN(DCMS,dVec,inertiaCGOther[1]);
+            ExpressInN_Add(DCME,dVecB,inertiaCGOther[1]);
 
             
         }
