@@ -378,7 +378,35 @@ namespace Sim
             dVec[0]=0.0; dVec[1]=tauE; dVec[2]=0.0;   //AU
             vt.MapToFrame(DCMS,dVec,moment[0]);
             dVec[1]= -tauE;                           //AL
-            vt.MapToFrame(DCMS,dVec,moment[1]);   
+            vt.MapToFrame(DCMS,dVec,moment[1]);  
+
+            // set up the equations of motion
+            int i,j;
+            linSys.SetABZero(); 
+            for(i=0;i<4;++i)
+            {
+                for(j=0;j<4;++j)
+                {
+                    dumA =  vt.Dot(pAngVel[i][0], inertiaBdyDeriv[j][0]);
+                    dumA += vt.Dot(pAngVel[i][1], inertiaBdyDeriv[j][1]);
+                    dumA += vt.Dot(pVel[i][0], inertiaCGDeriv[j][0]);
+                    dumA += vt.Dot(pVel[i][0], inertiaCGDeriv[j][0]);
+                    linSys.A[i][j] = dumA;
+                }
+
+                dumB = -vt.Dot(pAngVel[i][0], inertiaBdyOther[0]);
+                dumB -= vt.Dot(pAngVel[i][1], inertiaBdyOther[1]);
+                dumB -= vt.Dot(pVel[i][0], inertiaCGOther[0]);
+                dumB -= vt.Dot(pVel[i][1], inertiaCGOther[1]);
+
+                dumB += vt.Dot(pAngVel[i][0], moment[0]);
+                dumB += vt.Dot(pAngVel[i][1], moment[1]);
+                dumB += vt.Dot(pAngVel[i][0], weight[0]);
+                dumB += vt.Dot(pAngVel[i][1], weight[1]);
+
+                linSys.b[i] = dumB;
+            }
+            
         }
 
         //--------------------------------------------------------------------
