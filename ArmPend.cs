@@ -31,6 +31,8 @@ namespace Sim
         double IgALy;    //                            y component
         double IgALz;    //                            z component
 
+        VecTool vt;      // vector tool changing basis, dot products, etc
+
         double[,] DCMS;  // DCM between shoulder frame and Newtonian frame
         double[,] DCME;  // DCM between elbow frame and Newtonian frame
         
@@ -135,6 +137,8 @@ namespace Sim
             x[7] = 0.0;    // q3
 
             x[8] = 0.0;    // theta, elbow angle
+
+            vt = new VecTool();
 
             DCMS = new double[3,3];
             DCME = new double[3,3];
@@ -285,45 +289,45 @@ namespace Sim
             // calculate partial velocities, N frame
             // uppper arm (omX) is zero, handled previously
             dVec[0] = dVec[1] = 0.0; dVec[2] = -dAU;  //upper arm (omY)
-            ExpressInN(DCMS,dVec,pVel[1][0]);
+            vt.MapToFrame(DCMS,dVec,pVel[1][0]);
             dVec[0] = dVec[2] = 0.0; dVec[1] = dAU;   //upper arm (omZ)
-            ExpressInN(DCMS,dVec,pVel[2][0]);
+            vt.MapToFrame(DCMS,dVec,pVel[2][0]);
             // upper arm (uTh) is zero, handled previously
             dVecB[0] = 0.0; dVecB[1] = dAL*sTh; dVecB[2] = 0.0; // AL (omX)
-            ExpressInN(DCME,dVecB,pVel[0][1]);
+            vt.MapToFrame(DCME,dVecB,pVel[0][1]);
             dVec[0]=0.0; dVec[1]=0.0; dVec[2]=-LAU;  // lower arm (omY)
             dVecB[0]=0.0; dVecB[1]=0.0; dVecB[2]=-dAL;
-            ExpressInN(DCMS,dVec,pVel[1][1]);
-            ExpressInN_Add(DCME,dVecB,pVel[1][1]);
+            vt.MapToFrame(DCMS,dVec,pVel[1][1]);
+            vt.MapToFrameAdd(DCME,dVecB);
             dVec[0]=0.0; dVec[1]=LAU; dVec[2]=0.0;   // lower arm (omZ)
             dVecB[0]=0.0; dVecB[1]=dAL*cTh; dVecB[2]=0.0;
-            ExpressInN(DCMS,dVec,pVel[2][1]);
-            ExpressInN_Add(DCME,dVecB,pVel[2][1]);
+            vt.MapToFrame(DCMS,dVec,pVel[2][1]);
+            vt.MapToFrameAdd(DCME,dVecB);
             dVecB[0]=0.0; dVecB[1]=0.0; dVecB[2]=-dAL; // lower arm (uTh)
-            ExpressInN(DCME,dVecB,pVel[3][1]);
+            vt.MapToFrame(DCME,dVecB,pVel[3][1]);
 
             // inertial body coefficients, N frame
             dVec[0]=IgAUx; dVec[1]=0.0; dVec[2]=0.0;   // upper arm (omX)
-            ExpressInN(DCMS,dVec,inertiaBdyDeriv[0][0]);
+            vt.MapToFrame(DCMS,dVec,inertiaBdyDeriv[0][0]);
             dVec[0]=0.0; dVec[1]=IgAUy; dVec[2]=0.0;   // upper arm (omY)
-            ExpressInN(DCMS,dVec,inertiaBdyDeriv[1][0]);
+            vt.MapToFrame(DCMS,dVec,inertiaBdyDeriv[1][0]);
             dVec[0]=0.0; dVec[1]=0.0; dVec[2]=IgAUz;   // upper arm (omZ)
-            ExpressInN(DCMS,dVec,inertiaBdyDeriv[2][0]);
+            vt.MapToFrame(DCMS,dVec,inertiaBdyDeriv[2][0]);
             // upper arm (uTh) is zero, handled previously
             dVec[0]=IgALx*cTh; dVec[1]=0.0; dVec[2]=IgALz*sTh; // AL (omX)
-            ExpressInN(DCME,dVec,inertiaBdyDeriv[0][1]);
+            vt.MapToFrame(DCME,dVec,inertiaBdyDeriv[0][1]);
             dVec[0]=0.0; dVec[1]=IgALy; dVec[2]=0.0;  // lower arm (omY)
-            ExpressInN(DCME,dVec,inertiaBdyDeriv[1][1]);
+            vt.MapToFrame(DCME,dVec,inertiaBdyDeriv[1][1]);
             dVec[0]=-IgALx*sTh; dVec[1]=0.0; dVec[2]=IgALz*cTh; // AL (omZ)
-            ExpressInN(DCME,dVec,inertiaBdyDeriv[2][1]);
-            dVec[0]=0.0; dVec[1]=IgALy; dVec[3]=0.0;  // lower arm (uTh)
-            ExpressInN(DCME,dVec,inertiaBdyDeriv[3][1]);
+            vt.MapToFrame(DCME,dVec,inertiaBdyDeriv[2][1]);
+            dVec[0]=0.0; dVec[1]=IgALy; dVec[2]=0.0;  // lower arm (uTh)
+            vt.MapToFrame(DCME,dVec,inertiaBdyDeriv[3][1]);
 
             // inertial body other terms, N frame
             dVec[0] = -(IgAUy-IgAUz)*omY*omZ;   //upper arm
             dVec[1] = -(IgAUz-IgAUx)*omZ*omX;
             dVec[2] = -(IgAUx-IgAUy)*omX*omY;
-            ExpressInN(DCMS,dVec,inertiaBdyOther[0]);
+            vt.MapToFrame(DCMS,dVec,inertiaBdyOther[0]);
 
             dVecB[0] = omX*cTh - omZ*sTh; // ang vel of AL about e_x
             dVecB[1] = omY + uTh;         // ang vel of AL about e_y
@@ -331,33 +335,33 @@ namespace Sim
             dVec[0] = -IgALx*dVecB[2]*uTh - (IgALy-IgALz)*dVecB[1]*dVecB[2];
             dVec[1] = -(IgALz-IgALx)*dVecB[2]*dVecB[0];
             dVec[2] = IgALz*dVecB[0]*uTh - (IgALx-IgALy)*dVecB[0]*dVecB[1];
-            ExpressInN(DCME,dVec,inertiaBdyOther[1]);
+            vt.MapToFrame(DCME,dVec,inertiaBdyOther[1]);
 
             // inertia CG coefficients, N frame
             // upper Arm (omX) is zero, handled previously
             dVec[0]=0.0; dVec[1]=0.0; dVec[2]= -mAU*dAU;  // upper arm (omY)
-            ExpressInN(DCMS,dVec,inertiaCGDeriv[1][0]);
+            vt.MapToFrame(DCMS,dVec,inertiaCGDeriv[1][0]);
             dVec[0]=0.0; dVec[1]=mAU*dAU; dVec[2]=0.0;    // upper arm (omZ)
-            ExpressInN(DCMS,dVec,inertiaCGDeriv[2][0]);
+            vt.MapToFrame(DCMS,dVec,inertiaCGDeriv[2][0]);
             // upper Arm (uTh) is zero, handled previously
             dVecB[0]=0.0; dVecB[1]=mAL*dAL*sTh; dVecB[2]=0.0;  // AL (omX)
-            ExpressInN(DCME,dVecB,inertiaCGDeriv[0][1]);
+            vt.MapToFrame(DCME,dVecB,inertiaCGDeriv[0][1]);
             dVec[0]=0.0; dVec[1]=0.0; dVec[2]= -mAL*LAU;  // lower arm (omY)
             dVecB[0]=0.0; dVecB[1]=0.0; dVecB[2]= -mAL*dAL;
-            ExpressInN(DCMS,dVec,inertiaCGDeriv[1][1]);
-            ExpressInN_Add(DCME,dVecB,inertiaCGDeriv[1][1]);
+            vt.MapToFrame(DCMS,dVec,inertiaCGDeriv[1][1]);
+            vt.MapToFrameAdd(DCME,dVecB);
             dVec[0]=0.0; dVec[1]=mAL*LAU; dVec[2]=0.0;   // lower arm (omZ)
             dVecB[0]=0.0; dVecB[1]=mAL*dAL*cTh; dVecB[2]=0.0;
-            ExpressInN(DCMS,dVec,inertiaCGDeriv[2][1]);
-            ExpressInN_Add(DCME,dVecB,inertiaCGDeriv[2][1]);
+            vt.MapToFrame(DCMS,dVec,inertiaCGDeriv[2][1]);
+            vt.MapToFrameAdd(DCME,dVecB);
             dVecB[0]=0.0; dVecB[1]=0.0; dVecB[2]= -mAL*dAL; // lower arm (uTh)
-            ExpressInN(DCME,dVecB,inertiaCGDeriv[3][1]);
+            vt.MapToFrame(DCME,dVecB,inertiaCGDeriv[3][1]);
 
             // inertia CG other terms, N frame
             dVec[0] = -mAU*dAU*(omY*omY + omZ*omZ);    // upper arm
             dVec[1] = mAU*dAU*omX*omY;
             dVec[2] = mAU*dAU*omX*omZ;
-            ExpressInN(DCMS,dVec,inertiaCGOther[0]);
+            vt.MapToFrame(DCMS,dVec,inertiaCGOther[0]);
             dVec[0] = -mAL*LAU*(omY*omY + omZ*omZ);    // lower arm
             dVec[1] =  mAL*LAU*omX*omY;
             dVec[2] =  mAL*LAU*omX*omZ;
@@ -367,55 +371,50 @@ namespace Sim
             dVecB[0] = -mAL*dAL*(dumA*dumA + dumB*dumB);
             dVecB[1] = mAL*dAL*(dumC*(dumA+uTh));
             dVecB[2] = mAL*dAL*dumA*dumC;
-            ExpressInN(DCMS,dVec,inertiaCGOther[1]);
-            ExpressInN_Add(DCME,dVecB,inertiaCGOther[1]);
+            vt.MapToFrame(DCMS,dVec,inertiaCGOther[1]);
+            vt.MapToFrameAdd(DCME,dVecB);
 
             // moment
             dVec[0]=0.0; dVec[1]=tauE; dVec[2]=0.0;   //AU
-            ExpressInN(DCMS,dVec,moment[0]);
+            vt.MapToFrame(DCMS,dVec,moment[0]);
             dVec[1]= -tauE;                           //AL
-            ExpressInN(DCMS,dVec,moment[1]);   
+            vt.MapToFrame(DCMS,dVec,moment[1]);   
         }
 
         //--------------------------------------------------------------------
         // ExpressInN: 
         //--------------------------------------------------------------------
-        private void ExpressInN(double[,] dcm, double[] locVec, double[] nVec)
-        {
-            nVec[0] = dcm[0,0]*locVec[0] + dcm[0,1]*locVec[1] + 
-                dcm[0,2]*locVec[2];
-            nVec[1] = dcm[1,0]*locVec[0] + dcm[1,1]*locVec[1] + 
-                dcm[1,2]*locVec[2];
-            nVec[2] = dcm[2,0]*locVec[0] + dcm[2,1]*locVec[1] + 
-                dcm[2,2]*locVec[2];
-        }
+        // private void ExpressInN(double[,] dcm, double[] locVec, double[] nVec)
+        // {
+        //     nVec[0] = dcm[0,0]*locVec[0] + dcm[0,1]*locVec[1] + 
+        //         dcm[0,2]*locVec[2];
+        //     nVec[1] = dcm[1,0]*locVec[0] + dcm[1,1]*locVec[1] + 
+        //         dcm[1,2]*locVec[2];
+        //     nVec[2] = dcm[2,0]*locVec[0] + dcm[2,1]*locVec[1] + 
+        //         dcm[2,2]*locVec[2];
+        // }
 
         //--------------------------------------------------------------------
         // ExpressInN_Add: 
         //--------------------------------------------------------------------
-        private void ExpressInN_Add(double[,] dcm, double[] locVec, 
-            double[] nVec)
-        {
-            nVec[0] += dcm[0,0]*locVec[0] + dcm[0,1]*locVec[1] + 
-                dcm[0,2]*locVec[2];
-            nVec[1] += dcm[1,0]*locVec[0] + dcm[1,1]*locVec[1] + 
-                dcm[1,2]*locVec[2];
-            nVec[2] += dcm[2,0]*locVec[0] + dcm[2,1]*locVec[1] + 
-                dcm[2,2]*locVec[2];
-        }
+        // private void ExpressInN_Add(double[,] dcm, double[] locVec, 
+        //     double[] nVec)
+        // {
+        //     nVec[0] += dcm[0,0]*locVec[0] + dcm[0,1]*locVec[1] + 
+        //         dcm[0,2]*locVec[2];
+        //     nVec[1] += dcm[1,0]*locVec[0] + dcm[1,1]*locVec[1] + 
+        //         dcm[1,2]*locVec[2];
+        //     nVec[2] += dcm[2,0]*locVec[0] + dcm[2,1]*locVec[1] + 
+        //         dcm[2,2]*locVec[2];
+        // }
 
         //--------------------------------------------------------------------
         // TestFunc
         //--------------------------------------------------------------------
         public void TestFunc()
         {
-            dVecB[0] = 1.0;
-            dVecB[1] = 2.0;
-            dVecB[2] = 3.0;
-
-            ExpressInN(DCMS,dVecB,dVec);
-            Console.WriteLine(dVec[0].ToString() + ", " + dVec[1].ToString() + 
-                ", " + dVec[2].ToString());
+            RHSFunc(x,0.0,f[0]);
+            Console.WriteLine("Tested");
         }
     }
 } 
