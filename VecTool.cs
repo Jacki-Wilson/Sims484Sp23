@@ -18,9 +18,9 @@ namespace Util484
         }
 
         //--------------------------------------------------------------------
-        // MapToBasis
+        // MapToFrame
         //--------------------------------------------------------------------
-        public void MapToBasis(double[,] dcm, double[] v, double[] rr)
+        public void MapToFrame(double[,] dcm, double[] v, double[] rr)
         {
             res = rr;
 
@@ -29,7 +29,7 @@ namespace Util484
             res[2] = dcm[2,0]*v[0] + dcm[2,1]*v[1] + dcm[2,2]*v[2];
         }
 
-        public void MapToBasis(double[,] dcm, double[] v)
+        public void MapToFrameAdd(double[,] dcm, double[] v)
         {
             res[0] += dcm[0,0]*v[0] + dcm[0,1]*v[1] + dcm[0,2]*v[2];
             res[1] += dcm[1,0]*v[0] + dcm[1,1]*v[1] + dcm[1,2]*v[2];
