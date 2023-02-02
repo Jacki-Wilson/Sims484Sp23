@@ -390,7 +390,7 @@ namespace Sim
                     dumA =  vt.Dot(pAngVel[i][0], inertiaBdyDeriv[j][0]);
                     dumA += vt.Dot(pAngVel[i][1], inertiaBdyDeriv[j][1]);
                     dumA += vt.Dot(pVel[i][0], inertiaCGDeriv[j][0]);
-                    dumA += vt.Dot(pVel[i][0], inertiaCGDeriv[j][0]);
+                    dumA += vt.Dot(pVel[i][1], inertiaCGDeriv[j][1]);
                     linSys.A[i][j] = dumA;
                 }
 
@@ -401,12 +401,13 @@ namespace Sim
 
                 dumB += vt.Dot(pAngVel[i][0], moment[0]);
                 dumB += vt.Dot(pAngVel[i][1], moment[1]);
-                dumB += vt.Dot(pAngVel[i][0], weight[0]);
-                dumB += vt.Dot(pAngVel[i][1], weight[1]);
+                dumB += vt.Dot(pVel[i][0], weight[0]);
+                dumB += vt.Dot(pVel[i][1], weight[1]);
 
                 linSys.b[i] = dumB;
             }
             linSys.SolveGauss();
+            //TestFunc();
 
             ff[0] = linSys.sol[0];
             ff[1] = linSys.sol[1];
@@ -421,40 +422,45 @@ namespace Sim
             ff[8] = uTh;
         }
 
-        //--------------------------------------------------------------------
-        // ExpressInN: 
-        //--------------------------------------------------------------------
-        // private void ExpressInN(double[,] dcm, double[] locVec, double[] nVec)
-        // {
-        //     nVec[0] = dcm[0,0]*locVec[0] + dcm[0,1]*locVec[1] + 
-        //         dcm[0,2]*locVec[2];
-        //     nVec[1] = dcm[1,0]*locVec[0] + dcm[1,1]*locVec[1] + 
-        //         dcm[1,2]*locVec[2];
-        //     nVec[2] = dcm[2,0]*locVec[0] + dcm[2,1]*locVec[1] + 
-        //         dcm[2,2]*locVec[2];
-        // }
-
-        //--------------------------------------------------------------------
-        // ExpressInN_Add: 
-        //--------------------------------------------------------------------
-        // private void ExpressInN_Add(double[,] dcm, double[] locVec, 
-        //     double[] nVec)
-        // {
-        //     nVec[0] += dcm[0,0]*locVec[0] + dcm[0,1]*locVec[1] + 
-        //         dcm[0,2]*locVec[2];
-        //     nVec[1] += dcm[1,0]*locVec[0] + dcm[1,1]*locVec[1] + 
-        //         dcm[1,2]*locVec[2];
-        //     nVec[2] += dcm[2,0]*locVec[0] + dcm[2,1]*locVec[1] + 
-        //         dcm[2,2]*locVec[2];
-        // }
 
         //--------------------------------------------------------------------
         // TestFunc
         //--------------------------------------------------------------------
         public void TestFunc()
         {
-            RHSFunc(x,0.0,f[0]);
-            Console.WriteLine("Tested");
+            int i,j;
+
+            Console.WriteLine("======================================");
+            for(i=0;i<4;++i)
+            {
+                for(j=0;j<4;++j)
+                {
+                    Console.Write(linSys.A[i][j].ToString() + ", ");
+                }
+                Console.Write("      " + linSys.b[i].ToString() + "\n");
+            }
+            Console.WriteLine("--------------------------------------");
+            for(i=0;i<4;++i)
+                Console.WriteLine(linSys.sol[i].ToString());
+            Console.WriteLine("--------inertia other-----------------");
+            for(i=0;i<3;++i){
+                Console.WriteLine(inertiaBdyOther[0][i].ToString() + "   " + 
+                    inertiaBdyOther[1][i].ToString() + "   " +
+                    inertiaCGOther[0][i].ToString() + "   " +
+                    inertiaCGOther[1][i].ToString());
+
+            }
+            dumA = mAU*g*dAU;
+            dumB = mAL*g*(LAU+dAL);
+            Console.WriteLine("Moments   " + dumA.ToString() + "   " + dumB.ToString());
+
+            dumA = IgAUz + mAU*dAU*dAU;
+            dumB = IgALz + mAL*(LAU+dAL)*(LAU+dAL);
+            Console.WriteLine("Rot Inertias   " + dumA.ToString() + "   " + dumB.ToString());
+            Console.WriteLine("Masses   " + mAU.ToString() + "   " + mAL.ToString());
+            Console.WriteLine("Lengths   " + LAU.ToString() + "  " + LAL.ToString());
+            
+            Console.WriteLine("======================================");
         }
     }
 } 
