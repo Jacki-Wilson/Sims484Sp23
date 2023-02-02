@@ -406,7 +406,19 @@ namespace Sim
 
                 linSys.b[i] = dumB;
             }
-            
+            linSys.SolveGauss();
+
+            ff[0] = linSys.sol[0];
+            ff[1] = linSys.sol[1];
+            ff[2] = linSys.sol[2];
+            ff[3] = linSys.sol[3];
+
+            // kinematic differential equations
+            ff[4] = 0.5*(-q1*omX - q2*omY - q3*omZ);
+            ff[5] = 0.5*( q0*omX - q3*omY + q2*omZ);
+            ff[6] = 0.5*( q3*omX + q0*omY - q1*omZ);
+            ff[7] = 0.5*(-q2*omX + q1*omY + q0*omZ);
+            ff[8] = uTh;
         }
 
         //--------------------------------------------------------------------
