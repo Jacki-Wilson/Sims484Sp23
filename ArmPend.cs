@@ -136,7 +136,7 @@ namespace Sim
             x[6] = 0.0;    // q2
             x[7] = 0.0;    // q3
 
-            x[8] = 0.0;    // theta, elbow angle
+            x[8] = 1.0;    // theta, elbow angle
 
             vt = new VecTool();
 
@@ -177,7 +177,7 @@ namespace Sim
             }
 
 
-            // angular velocity on upper arm due to elbow is zero
+            // partial angular velocity on upper arm due to elbow is zero
             pAngVel[3][0][0] = pAngVel[3][0][1] = pAngVel[3][0][2] = 0.0;
             
             // partial velocity of cm of upper arm due to omegaX is ZERO
@@ -369,7 +369,7 @@ namespace Sim
             dumB = omY+uTh;
             dumC = omX*cTh - omZ*sTh;
             dVecB[0] = -mAL*dAL*(dumA*dumA + dumB*dumB);
-            dVecB[1] = mAL*dAL*(dumC*(dumA+uTh));
+            dVecB[1] = mAL*dAL*dumC*uTh;
             dVecB[2] = mAL*dAL*dumA*dumC;
             vt.MapToFrame(DCMS,dVec,inertiaCGOther[1]);
             vt.MapToFrameAdd(DCME,dVecB);
