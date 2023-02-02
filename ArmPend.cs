@@ -462,5 +462,61 @@ namespace Sim
             
             Console.WriteLine("======================================");
         }
+
+        //--------------------------------------------------------------------
+        // getters/setters
+        //--------------------------------------------------------------------
+        public double q0
+        {
+            get{ return x[4]; }
+        }
+
+        public double q1
+        {
+            get{ return x[5]; }
+        }
+        public double q2
+        {
+            get{ return x[6]; }
+        }
+        public double q3
+        {
+            get{ return x[7]; }
+        }
+
+        public double elbowAngle
+        {
+            get{ return x[8]; }
+
+            set{ x[8] = value; }
+        }
+
+        public double omegaX
+        {
+            get{ return x[0]; }
+
+            set{ x[0] = value; }
+        }
+
+        public double omegaY
+        {
+            get{ return x[1]; }
+
+            set{ x[1] = value; }
+        }
+
+        public double omegaZ
+        {
+            get{ return x[2]; }
+
+            set{ x[2] = value; }
+        }
+
+        public double elbowAngleDot
+        {
+            get{ return x[3]; }
+
+            set{ x[3] = value; }
+        }
     }
 } 
