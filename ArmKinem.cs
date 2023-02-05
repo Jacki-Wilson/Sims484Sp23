@@ -20,6 +20,7 @@ namespace Sim
         double thetaDes;
         double phiDes;
         double elbowAngleDes;
+        double deg2Rad;  // converts degrees to radians
 
         double[,] R;     // Rotation matrix (dcm)
 
@@ -38,6 +39,8 @@ namespace Sim
             phiDes = 0.0;
             elbowAngleDes = 0.0;
 
+            deg2Rad = Math.PI/180.0;
+
             // set up default initial conditions
             x[0] = 0.0;    // psi: rotation about N.y to form Frame A
             x[1] = 0.0;    // theta: rotation about A.z to form Frame B
@@ -48,12 +51,51 @@ namespace Sim
             x[6] = 0.0;    // phiDot
             x[7] = 0.0;    // elbowAngleDot
 
+            SetRHSFunc(RHSFunc);
+        }
+
+        //--------------------------------------------------------------------
+        // SetDesiredArmAngles:
+        //--------------------------------------------------------------------
+        public void SetDesiredArmAnglesDeg(double psiD, double thetaD, 
+            double phiD, double elbD)
+        {
+            if(psiD < -120.0)
+                psiD = -120.0;
+            if(psiD > 80.0)
+                psiD = 80.0;
+            psiDes = deg2Rad*psiD;
+
+            if(thetaD < -90.0)
+                thetaD = -90.0;
+            if(thetaD > 90.0)
+                thetaD = 90.0;
+            thetaDes = deg2Rad*thetaD;
+
+            if(phiD < -90.0)
+                phiD = -90.0;
+            if(phiD > 90.0)
+                phiD = 90.0;
+            phiDes = deg2Rad*phiD;
+
+            if(elbD < -90.0)
+                elbD = -90.0;
+            if(elbD > 90.0)
+                elbD = 90.0;
+            elbowAngleDes = deg2Rad*elbD;
+        }
+
+        //--------------------------------------------------------------------
+        // MapEulerYZX2DCM
+        //--------------------------------------------------------------------
+        private void MapEulerYZX2DCM()
+        {
 
         }
 
         //--------------------------------------------------------------------
         // RHSFunc: function which calculates the right side of the 
-        //          differential equation
+        //          differential equation.  THIS IS NOT THE WAY TO DO IT!
         //--------------------------------------------------------------------
         private void RHSFunc(double[] st, double t, double[] ff)
         {
@@ -76,5 +118,30 @@ namespace Sim
             ff[6] = -kp*(phi - phiDes) - kd*phiDot;
             ff[7] = -kp*(elbowAngle - elbowAngleDes) - kd*elbowAngleDot;
         }
+
+        //--------------------------------------------------------------------
+        // Getters
+        //--------------------------------------------------------------------
+        public double Psi
+        {
+            get{ return x[0]; }
+        }
+
+        public double Theta
+        {
+            get{ return x[1]; }
+        }
+
+        public double Phi
+        {
+            get{ return x[2]; }
+        }
+
+        public double ElbowAngle
+        {
+            get{ return x[3]; }
+        }
     }
+
+    
 }
