@@ -12,6 +12,7 @@ namespace Sim
         double q1;
         double q2;
         double q3;
+        double magQSq;   // sum of squares of quaternions
 
         double kp;       // proportional gain
         double kd;       // derivative gain
@@ -24,6 +25,7 @@ namespace Sim
         double rad2Deg;  // converts radians to degrees
 
         double[,] R;     // Rotation matrix (dcm)
+        double detR;     // Determinant of R, used for debugging purposes
 
         //--------------------------------------------------------------------
         // constructor
@@ -31,6 +33,8 @@ namespace Sim
         public ArmKinem() : base(8)
         {
             R = new double[3,3];
+            detR = 33.3;
+            magQSq = 22.2;
 
             kp = 200.0;
             kd = 20.0;
@@ -88,11 +92,107 @@ namespace Sim
         }
 
         //--------------------------------------------------------------------
+        // PostProcess: calculate quaternions
+        //--------------------------------------------------------------------
+        public void PostProcess()
+        {
+            MapEulerYZXtoDCM();
+            detR = DetRotationMatrix();
+            MapRotationMat2Quat();
+        }
+
+        //--------------------------------------------------------------------
         // MapEulerYZXtoDCM
         //--------------------------------------------------------------------
         private void MapEulerYZXtoDCM()
         {
+            double cPsi = Math.Cos(x[0]);
+            double sPsi = Math.Sin(x[0]);
+            double cTheta = Math.Cos(x[1]);
+            double sTheta = Math.Sin(x[1]);
+            double cPhi = Math.Cos(x[2]);
+            double sPhi = Math.Sin(x[2]);
 
+            R[0,0] = cPsi*cTheta;
+            R[0,1] = sPhi*sPsi - sTheta*cPhi*cPsi;
+            R[0,2] = sPhi*sTheta*cPsi + sPsi*cPhi;
+
+            R[1,0] = sTheta;
+            R[1,1] = cPhi*cTheta;
+            R[1,2] = -sPhi*cTheta;
+
+            R[2,0] = -sPsi*cTheta;
+            R[2,1] = sPhi*cPsi+sPsi*sTheta*cPhi;
+            R[2,2] = -sPhi*sPsi*sTheta + cPhi*cPsi;
+        }
+
+        //--------------------------------------------------------------------
+        // DetRotationMatrix: Returns the determinant of the rotation matrix
+        //--------------------------------------------------------------------
+        private double DetRotationMatrix()
+        {
+            double det = R[0,0]*R[1,1]*R[2,2] + R[0,1]*R[1,2]*R[2,0] +
+                R[0,2]*R[1,0]*R[2,1];
+            
+            det -= R[0,2]*R[1,1]*R[2,0] + R[0,1]*R[1,0]*R[2,2] + 
+                R[0,0]*R[1,2]*R[2,1];
+
+            return det;
+        }
+
+        //--------------------------------------------------------------------
+        // MapRotationMat2Quat
+        //--------------------------------------------------------------------
+        private void MapRotationMat2Quat()
+        {
+            double tr = R[0,0] + R[1,1] + R[2,2];
+            double s;
+
+            if(tr > 0.0)
+            {
+                s = Math.Sqrt(tr + 1.0);
+                q0 = s*0.5;
+                s = 0.5/s;
+                q1 = (-R[1,2] + R[2,1])*s;
+                q2 = (-R[2,0] + R[0,2])*s;
+                q3 = (-R[0,1] + R[1,0])*s;
+                magQSq = q0*q0 + q1*q1 + q2*q2 + q3*q3;
+
+                return;
+            }
+
+            if((R[0,0]>R[1,1]) && (R[0,0]>R[2,2]))
+            {
+                s = 2.0*Math.Sqrt(1.0+R[0,0]-R[1,1]-R[2,2]);
+                q0 = (R[2,1] - R[1,2])/s;
+                q1 = 0.25*s;
+                q2 = (R[0,1] + R[1,0])/s;
+                q3 = (R[0,2] + R[2,0])/s;
+                magQSq = (q0*q0 + q1*q1 + q2*q2 + q3*q3);
+
+                return;
+            }
+
+            if(R[1,1] > R[2,2])
+            {
+                s = 2.0*Math.Sqrt(1.0 + R[1,1] - R[0,0] - R[2,2]);
+                q0 = (R[0,2] - R[2,0])/s;
+                q1 = (R[0,1] + R[1,0])/s;
+                q2 = 0.25*s;
+                q3 = (R[1,2] + R[2,1])/s;
+                magQSq = (q0*q0 + q1*q1 + q2*q2 + q3*q3);
+
+                return;
+            }
+
+            s = 2.0*Math.Sqrt(1.0 + R[2,2] - R[0,0] - R[1,1]);
+            q0 = (R[1,0] - R[0,1])/s;
+            q1 = (R[0,2] + R[2,0])/s;
+            q2 = (R[1,2] + R[2,1])/s;
+            q3 = 0.25*s;
+            magQSq = (q0*q0 + q1*q1 + q2*q2 + q3*q3);
+
+            return;
         }
 
         //--------------------------------------------------------------------
@@ -162,6 +262,36 @@ namespace Sim
         public double ElbowAngleDeg
         {
             get{ return x[3]*rad2Deg; }
+        }
+
+        public double DetRotMat
+        {
+            get{ return detR; }
+        }
+
+        public double Q0
+        {
+            get{ return q0;}
+        }
+
+        public double Q1
+        {
+            get{ return q1;}
+        }
+
+        public double Q2
+        {
+            get{ return q2;}
+        }
+
+        public double Q3
+        {
+            get{ return q3;}
+        }
+
+        public double QuatSquared
+        {
+            get{ return magQSq; }
         }
     }
 
