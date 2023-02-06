@@ -21,6 +21,7 @@ namespace Sim
         double phiDes;
         double elbowAngleDes;
         double deg2Rad;  // converts degrees to radians
+        double rad2Deg;  // converts radians to degrees
 
         double[,] R;     // Rotation matrix (dcm)
 
@@ -40,6 +41,7 @@ namespace Sim
             elbowAngleDes = 0.0;
 
             deg2Rad = Math.PI/180.0;
+            rad2Deg = 1.0/deg2Rad;
 
             // set up default initial conditions
             x[0] = 0.0;    // psi: rotation about N.y to form Frame A
@@ -78,17 +80,17 @@ namespace Sim
                 phiD = 90.0;
             phiDes = deg2Rad*phiD;
 
-            if(elbD < -90.0)
-                elbD = -90.0;
-            if(elbD > 90.0)
-                elbD = 90.0;
+            if(elbD < -120.0)
+                elbD = -120.0;
+            if(elbD > 0.0)
+                elbD = 0.0;
             elbowAngleDes = deg2Rad*elbD;
         }
 
         //--------------------------------------------------------------------
-        // MapEulerYZX2DCM
+        // MapEulerYZXtoDCM
         //--------------------------------------------------------------------
-        private void MapEulerYZX2DCM()
+        private void MapEulerYZXtoDCM()
         {
 
         }
@@ -140,6 +142,26 @@ namespace Sim
         public double ElbowAngle
         {
             get{ return x[3]; }
+        }
+
+        public double PsiDeg
+        {
+            get{ return x[0]*rad2Deg; }
+        }
+
+        public double ThetaDeg
+        {
+            get{ return x[1]*rad2Deg; }
+        }
+
+        public double PhiDeg
+        {
+            get{ return x[2]*rad2Deg; }
+        }
+
+        public double ElbowAngleDeg
+        {
+            get{ return x[3]*rad2Deg; }
         }
     }
 
